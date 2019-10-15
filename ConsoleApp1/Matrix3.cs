@@ -8,9 +8,15 @@ using rl = Raylib.Raylib;
 
 namespace ConsoleApp1
 {
-    public struct Matrix3
+    public class Matrix3
     {
         public float m1, m2, m3, m4, m5, m6, m7, m8, m9;
+        public Matrix3()
+        {
+            m1 = 1; m2 = 0; m3 = 0;
+            m4 = 0; m5 = 1; m6 = 0;
+            m7 = 0; m8 = 0; m9 = 1;
+        }
         public Matrix3(Vector3 xAxis, Vector3 yAxis, Vector3 zAxis)
         {
             m1 = xAxis.x; m2 = xAxis.y; m3 = xAxis.z;
@@ -57,7 +63,9 @@ namespace ConsoleApp1
         }
         public void Set (Matrix3 set)
         {
-            this = set;
+            m1 = set.m1; m2 = set.m2; m3 = set.m3;
+            m4 = set.m4; m5 = set.m5; m6 = set.m6;
+            m7 = set.m7; m8 = set.m8; m9 = set.m9;
         }
         public void Set (float m1, float m2, float m3, float m4, float m5, float m6, float m7, float m8, float m9)
         {
@@ -77,7 +85,7 @@ namespace ConsoleApp1
             m4 = 0; m5 = v.y; m6 = 0;
             m7 = 0; m8 = 0; m9 = v.z;
         }
-        void Scale(float x, float y, float z)
+        public void Scale(float x, float y, float z)
         {
             Matrix3 m = new Matrix3();
             m.SetScaled(x, y, z);
@@ -118,6 +126,14 @@ namespace ConsoleApp1
             Matrix3 m = new Matrix3();
             m.SetRotateZ(radians);
             Set(this * m);
+        }
+        public void SetTranslation(float x, float y)
+        {
+            m7 = x; m8 = y; m9 = 1;
+        }
+        public void Translate(float x, float y)
+        {
+            m7 += x; m8 += y;
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿using Raylib;
-using rl = Raylib.Raylib;
+using static Raylib.Raylib;
 
 namespace ConsoleApp1
 {
@@ -12,13 +12,17 @@ namespace ConsoleApp1
             int screenWidth = 800;
             int screenHeight = 450;
 
-            rl.InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+            Game game = new Game();
 
-            rl.SetTargetFPS(60);
+
+            InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+
+            SetTargetFPS(60);
+            game.Init();
             //--------------------------------------------------------------------------------------
 
             // Main game loop
-            while (!rl.WindowShouldClose())    // Detect window close button or ESC key
+            while (!WindowShouldClose())    // Detect window close button or ESC key
             {
                 // Update
                 //----------------------------------------------------------------------------------
@@ -27,19 +31,15 @@ namespace ConsoleApp1
 
                 // Draw
                 //----------------------------------------------------------------------------------
-                rl.BeginDrawing();
-
-                rl.ClearBackground(Color.RAYWHITE);
-
-                //rl.DrawText("Congrats! You created your first window!", 190, 200, 20, Color.LIGHTGRAY);
-
-                rl.EndDrawing();
+                game.Update();
+                game.Draw();
                 //----------------------------------------------------------------------------------
             }
 
             // De-Initialization
             //--------------------------------------------------------------------------------------
-            rl.CloseWindow();        // Close window and OpenGL context
+            game.Shutdown();
+            CloseWindow();        // Close window and OpenGL context
                                      //--------------------------------------------------------------------------------------
 
             return 0;
