@@ -9,13 +9,13 @@ namespace ConsoleApp1
         {
             // Initialization
             //--------------------------------------------------------------------------------------
-            int screenWidth = 800;
-            int screenHeight = 450;
+            int screenWidth = 1280;
+            int screenHeight = 720;
 
             Game game = new Game();
 
 
-            InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
+            InitWindow(screenWidth, screenHeight, "Tanks!");
 
             SetTargetFPS(60);
             game.Init();

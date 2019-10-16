@@ -26,6 +26,10 @@ namespace ConsoleApp1
         {
             get { return parent; }
         }
+        public List<SceneObject> Children
+        {
+            get { return children; }
+        }
         public SceneObject()
         {
 
@@ -33,21 +37,19 @@ namespace ConsoleApp1
         public int GetChildCount() { return children.Count; }
 
         public SceneObject GetChild(int index) { return children[index]; }
+        public SpriteObject GetSprite(int index) { return (SpriteObject)children[index]; }
         public void AddChild (SceneObject child)
         {
-            Debug.Assert(child.parent == null);
+            //Debug.Assert(child.parent == null);
+            if (child.parent != null ) { child.parent.RemoveChild(child); }
             child.parent = this;
             children.Add(child);
         }
         public void RemoveChild (SceneObject child)
         {
-            if (parent != null)
+            if (children.Remove(child) == true)
             {
-                parent.RemoveChild(this);
-            }
-            foreach (SceneObject so in children)
-            {
-                so.parent = null;
+                child.parent = null;
             }
         }
         public void UpdateTransform()
@@ -129,19 +131,51 @@ namespace ConsoleApp1
     }
     public class Bullet : SceneObject
     {
-        private int timeLeft = 30;
+        private int lifetime = 59;
+        private int timeLeft = 0;
         int bulletSpeed = 600;
+        public int TimeLeft { get { return timeLeft; } }
+        public Bullet()
+        {
+
+        }
+        public override void OnUpdate(float deltaTime)
+        {
+            Vector3 facing = new Vector3(localTransform.m1, localTransform.m2, 1) * deltaTime * bulletSpeed;
+            if (timeLeft > 0)
+            {
+                timeLeft--;
+                Translate(facing.x, facing.y);
+            }
+            else timeLeft = 0;
+        }
+        public void Face(SceneObject turret)
+        {
+            localTransform.Set(turret.GlobalTransform);
+            Vector3 facing = new Vector3(localTransform.m1, localTransform.m2, 1) * 50;
+            Translate(facing.x, facing.y);
+        }
+        public void Reset()
+        {
+            timeLeft = lifetime;
+        }
+    }
+    public class Effect : SceneObject
+    {
+        private int lifetime = 10;
+        private int timeLeft = 0;
         public int TimeLeft { get { return timeLeft; } }
         public override void OnUpdate(float deltaTime)
         {
-            timeLeft--;
-            Vector3 facing = new Vector3(localTransform.m1, localTransform.m2, 1) * deltaTime * bulletSpeed;
-            Translate(facing.x, facing.y);
+            if (timeLeft > 0) timeLeft--;
         }
-        public void Face(SceneObject tank, SceneObject turret)
+        public override void OnDraw()
         {
-            localTransform.Set(turret.GlobalTransform);
-
+            if (timeLeft <= 0) return;
+        }
+        public void Activate()
+        {
+            timeLeft = lifetime;
         }
     }
 }
