@@ -20,8 +20,12 @@ namespace ConsoleApp1
         public float reloading = 60f;
         private float reload = 0f;
         private float rotSpeed = 1f;
+        private float rotVolume = 0f;
         private Color loadColor = Color.GREEN;
 
+        Sound snd_drive;
+        Sound snd_rotate;
+        Sound snd_fire;
 
         SceneObject tankObject = new SceneObject();
         SceneObject turretObject = new SceneObject();
@@ -30,6 +34,7 @@ namespace ConsoleApp1
         SpriteObject tankSprite = new SpriteObject();
         SpriteObject turretSprite = new SpriteObject();
 
+        Hitbox tankHit = new Hitbox(20f, 20f);
 
         Bullet bullet = new Bullet();
         SpriteObject bulspr = new SpriteObject();
@@ -42,7 +47,11 @@ namespace ConsoleApp1
         //MODULAR STUFF
         Body body = new Body();
         Barrel barrel = new Barrel();
+        Ammo ammo = new Ammo();
 
+        List<Body> bodies = new List<Body>();
+        List<Barrel> barrels = new List<Barrel>();
+        List<Ammo> ammos = new List<Ammo>();
 
         //OBJECT POOL
         //ObjectPool<Bullet> objPool = new ObjectPool<Bullet>();
@@ -52,16 +61,36 @@ namespace ConsoleApp1
             stopwatch.Start();
             lastTime = stopwatch.ElapsedMilliseconds;
 
+            InitAudioDevice();
+            snd_drive = LoadSound("Resources/Sound/drive.ogg");
+            snd_rotate = LoadSound("Resources/Sound/rotate.ogg");
+            snd_fire = LoadSound("Resources/Sound/fire.ogg");
+
             Texture2D barrel1 = LoadTexture("Resources/tankBlue_barrel1_outline.png");
             Texture2D barrel2 = LoadTexture("Resources/tankBlue_barrel2_outline.png");
             Texture2D barrel3 = LoadTexture("Resources/tankBlue_barrel3_outline.png");
+            Texture2D bullet1 = LoadTexture("Resources/bulletBlue1_outline.png");
+            Texture2D bullet2 = LoadTexture("Resources/bulletBlue2_outline.png");
+            Texture2D bullet3 = LoadTexture("Resources/bulletBlue3_outline.png");
 
-            Barrel barrelAvg = new Barrel(barrel3, 0.5f, 75);
-            Barrel barrelFast = new Barrel(barrel2, 1, 60);
-            Barrel barrelHvy = new Barrel(barrel1, 1, 90);
+            Barrel barrelAvg = new Barrel(barrel3, 0.5f, 75, -8f);
+            Barrel barrelFst = new Barrel(barrel2, 1, 60, -8f);
+            Barrel barrelHvy = new Barrel(barrel1, 1, 90, -8f);
 
+            barrels.Add(barrelAvg);
+            barrels.Add(barrelFst);
+            barrels.Add(barrelHvy);
 
-            barrel = barrelFast;
+            Ammo ammoAvg = new Ammo(bullet1,1f,600);
+            Ammo ammoFst = new Ammo(bullet3,0.75f,700);
+            Ammo ammoHvy = new Ammo(bullet2,1.25f,500);
+
+            ammos.Add(ammoAvg);
+            ammos.Add(ammoFst);
+            ammos.Add(ammoHvy);
+
+            barrel = barrelAvg;
+            ammo = ammoFst;
 
             tankSprite.Load("Resources/tankBody_blue_outline.png");
             tankSprite.SetRotate(-90 * (float)(Math.PI / 180.0f));
@@ -84,12 +113,19 @@ namespace ConsoleApp1
 
             turretObject.AddChild(turretSprite);
             turretSprite.AddChild(shotFX);
+            tankSprite.AddChild(tankHit);
             tankObject.AddChild(tankSprite);
             tankObject.AddChild(turretObject);
             tankObject.SetPosition(GetScreenWidth() / 2f, GetScreenHeight() / 2f);
+
         }
         public void Shutdown()
-        { }
+        {
+            UnloadSound(snd_drive);
+            UnloadSound(snd_rotate);
+            UnloadSound(snd_fire);
+            CloseAudioDevice();
+        }
         public void Update()
         {
             currentTime = stopwatch.ElapsedMilliseconds;
@@ -105,7 +141,9 @@ namespace ConsoleApp1
             frames++;
 
             turretSprite.Load(barrel.Tex);
-            turretSprite.SetPosition(-10, turretSprite.Width / 2.0f);
+            turretSprite.SetPosition(barrel.Offset, turretSprite.Width / 2.0f);
+            bulspr.Load(ammo.Tex);
+            bulspr.SetPosition(0, -bulspr.Width / 2.0f);
             shotFX.SetPosition(turretSprite.Width / 2.0f, turretSprite.Height);
             shotSprite.SetPosition(-(shotSprite.Width / 2.0f), 0);
 
@@ -114,6 +152,31 @@ namespace ConsoleApp1
             if (reload < reloading) { reload++; loadColor = Color.LIME; }
             else { reload = reloading; loadColor = Color.GREEN; }
 
+            //DEBUG
+            if (IsKeyDown(KeyboardKey.KEY_ONE))
+            {
+                barrel = barrels[0];
+            }
+            if (IsKeyDown(KeyboardKey.KEY_TWO))
+            {
+                barrel = barrels[1];
+            }
+            if (IsKeyDown(KeyboardKey.KEY_THREE))
+            {
+                barrel = barrels[2];
+            }
+            if (IsKeyDown(KeyboardKey.KEY_FOUR))
+            {
+                ammo = ammos[0];
+            }
+            if (IsKeyDown(KeyboardKey.KEY_FIVE))
+            {
+                ammo = ammos[1];
+            }
+            if (IsKeyDown(KeyboardKey.KEY_SIX))
+            {
+                ammo = ammos[2];
+            }
             //tank control
             if (IsKeyDown(KeyboardKey.KEY_A))
             {
@@ -145,11 +208,52 @@ namespace ConsoleApp1
             {
                 turretObject.Rotate(deltaTime * rotSpeed);
             }
-            if (IsKeyPressed(KeyboardKey.KEY_SPACE) && reload >= reloading)
+            if (IsKeyPressed(KeyboardKey.KEY_SPACE) && reload >= reloading && bullet.TimeLeft <= 0)
             {
                 bullet.Reset();
                 reload = 0;
                 shotFX.Activate();
+                PlaySound(snd_fire);
+            }
+
+            if ((IsKeyDown(KeyboardKey.KEY_W) || IsKeyDown(KeyboardKey.KEY_S)))
+            {
+                if (IsSoundPlaying(snd_drive))
+                {
+                    SetSoundVolume(snd_drive, 1.0f);
+                }
+                else
+                {
+                    PlaySound(snd_drive);
+                }
+            }
+            else
+            {
+                if (!IsSoundPlaying(snd_drive))
+                {
+                    PlaySound(snd_drive);
+                    
+                }
+                SetSoundVolume(snd_drive, 0.2f);
+            }
+
+            if ((IsKeyDown(KeyboardKey.KEY_Q) || IsKeyDown(KeyboardKey.KEY_E)))
+            {
+                if (IsSoundPlaying(snd_rotate))
+                {
+                    SetSoundVolume(snd_rotate, 1.0f);
+                }
+                else
+                {
+                    PlaySound(snd_rotate);
+                }
+            }
+            else
+            {
+                if (IsSoundPlaying(snd_rotate))
+                {
+                    SetSoundVolume(snd_rotate, 0.0f);
+                }
             }
             tankObject.Update(deltaTime);
 
@@ -178,6 +282,10 @@ namespace ConsoleApp1
             DrawRectangle(20, GetScreenHeight() - 20 - (int)((reload / reloading) * 128), 24, (int)((reload / reloading) * 128), loadColor);
             EndDrawing();
             
+        }
+        public float Lerp(float begin, float end)
+        {
+            return (begin + end) / 2f;
         }
     }
     public class ObjectPool<T> where T : new()

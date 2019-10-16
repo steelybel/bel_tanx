@@ -19,3 +19,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+Sounds from Freesound.org - licensed under Creative Commons 3.0 Attribution License https://creativecommons.org/licenses/by/3.0/
+Hatch/Door Close by JustInvoke - https://freesound.org/people/JustInvoke/sounds/446110/
+Hatch/Door Open by JustInvoke - https://freesound.org/people/JustInvoke/sounds/446108/
+Tank Turret Rotate by KieranKeegan - https://freesound.org/people/KieranKeegan/sounds/418881/
+Tank fire Mixed.wav by Cyberkinetic films - https://freesound.org/people/Cyberkineticfilms/sounds/127845/

@@ -78,19 +78,22 @@ namespace ConsoleApp1
         Texture2D tex;
         float damageMult;
         float reloadTime;
+        float offset = -10f;
         public Texture2D Tex {get { return tex; } }
         public float DamageMult {get { return damageMult; } }
         public float ReloadTime {get { return reloadTime; } }
+        public float Offset {get { return offset; } }
         public Barrel()
         {
             damageMult = 1;
             reloadTime = 60;
         }
-        public Barrel(Texture2D tex, float damageMult, float reloadTime)
+        public Barrel(Texture2D tex, float damageMult, float reloadTime, float offset)
         {
             this.tex = tex;
             this.damageMult = damageMult;
             this.reloadTime = reloadTime;
+            this.offset = offset;
         }
     }
     

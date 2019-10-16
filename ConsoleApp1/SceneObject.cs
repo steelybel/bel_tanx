@@ -129,6 +129,43 @@ namespace ConsoleApp1
             }
         }
     }
+
+    public class Hitbox : SceneObject
+    {
+        bool circle = false;
+        private float width = 1f;
+        private float height = 1f;
+        public float setWidth { get { return width; } }
+        public float setHeight { get { return height; } }
+        public Hitbox(float width, float height)
+        {
+            this.width = width;
+            this.height = height;
+        }
+        public override void OnUpdate(float deltaTime)
+        {
+            if (setWidth != width) { width = setWidth; }
+            if (setHeight != height) { height = setHeight; }
+        }
+        public override void OnDraw()
+        {
+            float rotation = (float)Math.Atan2(
+                globalTransform.m2, globalTransform.m1);
+            if (!circle)
+            {
+                float rot_ = rotation * (float)(180.0f / Math.PI);
+                float x = globalTransform.m7; float y = globalTransform.m8;
+                Vector2 topLeft = new Vector2((x - (width / 2)) * rot_, (y - (height / 2)) * rot_);
+                Vector2 topRight = new Vector2((x + (width / 2)) * rot_, (y - (height / 2)) * rot_);
+                Vector2 botLeft = new Vector2((x - (width / 2)) * rot_, (y + (height / 2)) * rot_);
+                Vector2 botRight = new Vector2((x + (width / 2)) * rot_, (y + (height / 2)) * rot_);
+                DrawLineV(topLeft, topRight, Color.GREEN);
+                DrawLineV(botLeft, botRight, Color.GREEN);
+                DrawLineV(topLeft, botLeft, Color.GREEN);
+                DrawLineV(topRight, botRight, Color.GREEN);
+            }
+        }
+    }
     public class Bullet : SceneObject
     {
         private int lifetime = 59;
