@@ -23,6 +23,9 @@ namespace ConsoleApp1
         private float rotVolume = 0f;
         private Color loadColor = Color.GREEN;
 
+        bool soundOn = false;
+
+
         Sound snd_drive;
         Sound snd_rotate;
         Sound snd_fire;
@@ -208,53 +211,63 @@ namespace ConsoleApp1
             {
                 turretObject.Rotate(deltaTime * rotSpeed);
             }
+
+            if (IsKeyPressed(KeyboardKey.KEY_M))
+            {
+                soundOn = !soundOn;
+            }
+
             if (IsKeyPressed(KeyboardKey.KEY_SPACE) && reload >= reloading && bullet.TimeLeft <= 0)
             {
                 bullet.Reset();
                 reload = 0;
                 shotFX.Activate();
-                PlaySound(snd_fire);
+                if (soundOn) PlaySound(snd_fire);
             }
 
-            if ((IsKeyDown(KeyboardKey.KEY_W) || IsKeyDown(KeyboardKey.KEY_S)))
+            if(soundOn)
             {
-                if (IsSoundPlaying(snd_drive))
+                if ((IsKeyDown(KeyboardKey.KEY_W) || IsKeyDown(KeyboardKey.KEY_S)))
                 {
-                    SetSoundVolume(snd_drive, 1.0f);
+                    if (IsSoundPlaying(snd_drive))
+                    {
+                        SetSoundVolume(snd_drive, 1.0f);
+                    }
+                    else
+                    {
+                        PlaySound(snd_drive);
+                    }
                 }
                 else
                 {
-                    PlaySound(snd_drive);
-                }
-            }
-            else
-            {
-                if (!IsSoundPlaying(snd_drive))
-                {
-                    PlaySound(snd_drive);
-                    
-                }
-                SetSoundVolume(snd_drive, 0.2f);
-            }
+                    if (!IsSoundPlaying(snd_drive))
+                    {
+                        PlaySound(snd_drive);
 
-            if ((IsKeyDown(KeyboardKey.KEY_Q) || IsKeyDown(KeyboardKey.KEY_E)))
-            {
-                if (IsSoundPlaying(snd_rotate))
+                    }
+                    SetSoundVolume(snd_drive, 0.2f);
+                }
+
+                if ((IsKeyDown(KeyboardKey.KEY_Q) || IsKeyDown(KeyboardKey.KEY_E)))
                 {
-                    SetSoundVolume(snd_rotate, 1.0f);
+                    if (IsSoundPlaying(snd_rotate))
+                    {
+                        SetSoundVolume(snd_rotate, 1.0f);
+                    }
+                    else
+                    {
+                        PlaySound(snd_rotate);
+                    }
                 }
                 else
                 {
-                    PlaySound(snd_rotate);
+                    if (IsSoundPlaying(snd_rotate))
+                    {
+                        SetSoundVolume(snd_rotate, 0.0f);
+                    }
                 }
             }
-            else
-            {
-                if (IsSoundPlaying(snd_rotate))
-                {
-                    SetSoundVolume(snd_rotate, 0.0f);
-                }
-            }
+            
             tankObject.Update(deltaTime);
 
             if (bullet.TimeLeft > 0)
@@ -317,5 +330,11 @@ namespace ConsoleApp1
                 return obj;
             }
         }
+    }
+
+    class AABB
+    {
+        Vector3 min = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+        Vector3 max = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
     }
 }
