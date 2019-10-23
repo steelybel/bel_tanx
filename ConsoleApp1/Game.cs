@@ -32,6 +32,7 @@ namespace ConsoleApp1
         Sound snd_drive;
         Sound snd_rotate;
         Sound snd_fire;
+        Sound snd_load;
 
         SceneObject tankObject = new SceneObject();
         SceneObject turretObject = new SceneObject();
@@ -52,18 +53,21 @@ namespace ConsoleApp1
 
         //MODULAR STUFF
         Body body = new Body();
+        int bodyPick = 0;
         Barrel barrel = new Barrel();
-        Ammo ammo = new Ammo();
+        int gunPick = 0;
 
         List<Body> bodies = new List<Body>();
         List<Barrel> barrels = new List<Barrel>();
-        List<Ammo> ammos = new List<Ammo>();
 
         Texture2D[] expSpr = new Texture2D[5];
 
         //OBJECT POOL
         //ObjectPool<Bullet> objPool = new ObjectPool<Bullet>();
         //ObjectPool<SpriteObject> sprPool = new ObjectPool<SpriteObject>();
+
+        Rectangle crap = new Rectangle(0, 0, 128, 32);
+
         public void Init()
         {
             stopwatch.Start();
@@ -73,11 +77,13 @@ namespace ConsoleApp1
             snd_drive = LoadSound("Resources/Sound/drive.ogg");
             snd_rotate = LoadSound("Resources/Sound/rotate.ogg");
             snd_fire = LoadSound("Resources/Sound/fire.ogg");
+            snd_load = LoadSound("Resources/Sound/reload.ogg");
 
 
             Texture2D body1 = LoadTexture("Resources/tankBody_blue_outline.png");
             Texture2D body2 = LoadTexture("Resources/tankBody_bigRed_outline.png");
             Texture2D body3 = LoadTexture("Resources/tankBody_huge_outline.png");
+            Texture2D bodyS = LoadTexture("Resources/tankBody_dark.png");
             Texture2D barrel1 = LoadTexture("Resources/tankBlue_barrel1_outline.png");
             Texture2D barrel2 = LoadTexture("Resources/tankBlue_barrel2_outline.png");
             Texture2D barrel3 = LoadTexture("Resources/tankBlue_barrel3_outline.png");
@@ -88,15 +94,22 @@ namespace ConsoleApp1
             Texture2D s_barrel5 = LoadTexture("Resources/specialBarrel5_outline.png");
             Texture2D s_barrel6 = LoadTexture("Resources/specialBarrel6_outline.png");
             Texture2D s_barrel7 = LoadTexture("Resources/specialBarrel7_outline.png");
+            Texture2D rocketL = LoadTexture("Resources/barrelGrey_side.png");
             Texture2D bullet1 = LoadTexture("Resources/bulletBlue1_outline.png");
             Texture2D bullet2 = LoadTexture("Resources/bulletBlue2_outline.png");
             Texture2D bullet3 = LoadTexture("Resources/bulletBlue3_outline.png");
             Texture2D bulletM = LoadTexture("Resources/bulletDark1.png");
+            Texture2D rocket1 = LoadTexture("Resources/spaceMissiles_003.png");
+            Texture2D rocket2 = LoadTexture("Resources/spaceMissiles_006.png");
 
             Body bodyBasic = new Body(body1, 100f, 1f, 100f, 0f);
-            Body bodyBig = new Body(body2, 50f, 2f, 80f, 16f);
-            Body bodyBigger = new Body(body3, 75f, 0.5f, 120f, -16f);
+            bodyBasic.Rename("Cruiser tank");
+            Body bodyBig = new Body(body2, 75f, 0.8f, 125f, 16f);
+            bodyBig.Rename("Infantry tank");
+            Body bodyBigger = new Body(body3, 50f, 0.6f, 150f, -16f);
+            bodyBigger.Rename("Super-heavy tank");
 
+            //bodies.Add(bodySmall);
             bodies.Add(bodyBasic);
             bodies.Add(bodyBig);
             bodies.Add(bodyBigger);
@@ -106,14 +119,30 @@ namespace ConsoleApp1
             Ammo ammoHvy = new Ammo(bullet2, 1.25f, 500);
 
             Barrel barrelAvg = new Barrel(barrel2, bullet1, 1f, 600, 59, 75, -8f, 0);
-            Barrel barrelPrc = new Barrel(barrel3, bullet3, 0.75f, 700, 59, 60, -8f, 0);
-            Barrel barrelHwz = new Barrel(barrel1, bullet2, 1.25f, 500, 59, 90, -8f, 0); //HOWITZER
-            Barrel barrelTmm = new Barrel(s_barrel4, bulletM, 0.5f, 900, 29, 30, -16f, -4f); //20mm machine gun
+            barrelAvg.Rename("105mm cannon");
+            barrelAvg.Details(snd_load, 45, false, 0.0f);
+            Barrel barrelPrc = new Barrel(barrel3, bullet3, 0.75f, 700, 58, 60, -8f, 0);
+            barrelPrc.Rename("Armor-piercing Sabot");
+            barrelPrc.Details(snd_load, 45, false, 0.0f);
+            Barrel barrelHwz = new Barrel(barrel1, bullet2, 1.25f, 500, 59, 90, -8f, 0);
+            barrelHwz.Rename("120mm Howitzer");
+            barrelHwz.Details(snd_load, 45, false, 0.0f);
+            Barrel barrel45g = new Barrel(s_barrel4, bulletM, 0.5f, 900, 28, 30, -16f, 0); //20mm machine gun
+            barrel45g.Rename("45mm gun");
+            barrel45g.Details(snd_load, 45, false, 0.0f);
+            Barrel barrelMrl = new Barrel(s_barrel1, rocket1, 2f, 850, 28, 120, -16f, 0);
+            barrelMrl.Rename("Rocket launcher");
+            barrelMrl.Details(snd_load, 45, false, 0.0f);
+            Barrel barrelGui = new Barrel(rocketL, rocket1, 2f, 500, 90, 240, -24f, 0);
+            barrelGui.Rename("Guided missile");
+            barrelGui.Details(snd_load,45,true, 3.0f);
+            Barrel barrelMac = new Barrel(s_barrel4, bulletM, 0.5f, 900, 28, 30, -16f, -4f);
 
             barrels.Add(barrelAvg);
             barrels.Add(barrelPrc);
             barrels.Add(barrelHwz);
-            barrels.Add(barrelTmm);
+            barrels.Add(barrel45g);
+            barrels.Add(barrelGui);
 
             body = bodyBasic;
             barrel = barrelAvg;
@@ -179,6 +208,9 @@ namespace ConsoleApp1
             }
             frames++;
 
+            body = bodies[bodyPick];
+            barrel = barrels[gunPick];
+
             if (IsKeyPressed(KeyboardKey.KEY_P))
             {
                 paused = true;
@@ -233,39 +265,39 @@ namespace ConsoleApp1
             //DEBUG
             if (IsKeyDown(KeyboardKey.KEY_KP_1))
             {
-                barrel = barrels[0];
+                gunPick = 0;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_2))
             {
-                barrel = barrels[1];
+                gunPick = 1;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_3))
             {
-                barrel = barrels[2];
+                gunPick = 2;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_4))
             {
-                barrel = barrels[3];
+                gunPick = 3;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_5))
             {
-                barrel = barrels[2];
+                gunPick = 4;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_6))
             {
-                barrel = barrels[2];
+                gunPick = 0;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_7))
             {
-                barrel = barrels[2];
+                bodyPick = 0;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_8))
             {
-                body = bodies[1];
+                bodyPick = 1;
             }
             if (IsKeyDown(KeyboardKey.KEY_KP_9))
             {
-                body = bodies[2];
+                bodyPick = 2;
             }
             //tank control
             if (IsKeyDown(KeyboardKey.KEY_A))
@@ -293,10 +325,12 @@ namespace ConsoleApp1
             if (IsKeyDown(KeyboardKey.KEY_Q))
             {
                 turretObject.Rotate(-deltaTime * rotSpeed);
+                if (barrel.guided) bullet.Rotate(-deltaTime * barrel.steer);
             }
             if (IsKeyDown(KeyboardKey.KEY_E))
             {
                 turretObject.Rotate(deltaTime * rotSpeed);
+                if (barrel.guided) bullet.Rotate(deltaTime * barrel.steer);
             }
 
             if (IsKeyPressed(KeyboardKey.KEY_SPACE) && reload >= reloading && bullet.TimeLeft <= 0)
@@ -309,11 +343,12 @@ namespace ConsoleApp1
 
             if(soundOn)
             {
+                if (reload == reloading - 45) PlaySound(snd_load);
                 if ((IsKeyDown(KeyboardKey.KEY_W) || IsKeyDown(KeyboardKey.KEY_S)))
                 {
                     if (IsSoundPlaying(snd_drive))
                     {
-                        SetSoundVolume(snd_drive, 1.0f);
+                        ResumeSound(snd_drive);
                     }
                     else
                     {
@@ -322,12 +357,10 @@ namespace ConsoleApp1
                 }
                 else
                 {
-                    if (!IsSoundPlaying(snd_drive))
+                    if (IsSoundPlaying(snd_drive))
                     {
-                        PlaySound(snd_drive);
-
+                        PauseSound(snd_drive);
                     }
-                    SetSoundVolume(snd_drive, 0.2f);
                 }
 
                 if ((IsKeyDown(KeyboardKey.KEY_Q) || IsKeyDown(KeyboardKey.KEY_E)))
@@ -355,6 +388,14 @@ namespace ConsoleApp1
         }
         public void Paused()
         {
+            foreach (Body body in bodies)
+            {
+
+            }
+            foreach (Barrel gun in barrels)
+            {
+
+            }
             currentTime = stopwatch.ElapsedMilliseconds;
             deltaTime = (currentTime - lastTime) / 1000.0f;
 
@@ -388,6 +429,29 @@ namespace ConsoleApp1
             if (bullet.TimeLeft > 0)bullet.Draw();
             DrawRectangle(20, GetScreenHeight() - 148, 24, 128, Color.GRAY);
             DrawRectangle(20, GetScreenHeight() - 20 - (int)((reload / reloading) * 128), 24, (int)((reload / reloading) * 128), loadColor);
+
+            if (paused)
+            {
+                Vector2 bodyWritePos = new Vector2((GetScreenWidth() / 5) - (((bodies.Count - 1) * 128) - 48), (GetScreenHeight() / 2) - ((barrels.Count-1) * 64) + 32);
+                Vector2 barrelWritePos = new Vector2(GetScreenWidth() / 5, (GetScreenHeight() / 2) - ((barrels.Count-1) * 32));
+                Vector2 bodyWritePos_ = new Vector2(GetScreenWidth() / 4, (GetScreenHeight() / 2) - (bodies.Count * 32));
+                Vector2 barrelWritePos_ = new Vector2((GetScreenWidth() / 4) * 3, (GetScreenHeight() / 2) - (barrels.Count * 32));
+                for (int b = 0; b < bodies.Count; b++)
+                {
+                    DrawRectangle((int)bodyWritePos.x + b * 144, (int)bodyWritePos.y, 128, 32, (bodyPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                    DrawRectangleLines((int)bodyWritePos.x + b * 144, (int)bodyWritePos.y, 128, 32, (bodyPick == b) ? Color.BLUE : Color.GRAY);
+                    int tempM = MeasureText(bodies[b].Name, 12);
+                    DrawText(bodies[b].Name, (int)bodyWritePos.x + (tempM) + (b * 144) - 64, (int)bodyWritePos.y, 12, Color.WHITE);
+                }
+                for (int b = 0; b < barrels.Count; b++)
+                {
+                    DrawRectangle((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (gunPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                    DrawRectangleLines((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (gunPick == b) ? Color.BLUE : Color.GRAY);
+                    int tempM = MeasureText(barrels[b].Name, 12);
+                    DrawText(barrels[b].Name, (int)barrelWritePos.x - (tempM / 2), (int)barrelWritePos.y + (b * 64), 12, Color.WHITE);
+                }
+            }
+
             EndDrawing();
             
         }

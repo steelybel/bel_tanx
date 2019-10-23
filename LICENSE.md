@@ -25,3 +25,5 @@ Hatch/Door Close by JustInvoke - https://freesound.org/people/JustInvoke/sounds/
 Hatch/Door Open by JustInvoke - https://freesound.org/people/JustInvoke/sounds/446108/
 Tank Turret Rotate by KieranKeegan - https://freesound.org/people/KieranKeegan/sounds/418881/
 Tank fire Mixed.wav by Cyberkinetic films - https://freesound.org/people/Cyberkineticfilms/sounds/127845/
+Sherman E8 ("Easy 8") tank starting up and running by nicStage - https://freesound.org/people/nicStage/sounds/368670/
+G45-30-Submarine Hatch Opening.wav by craigsmith - https://freesound.org/people/craigsmith/sounds/438732/

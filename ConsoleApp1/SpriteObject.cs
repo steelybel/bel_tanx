@@ -121,6 +121,8 @@ namespace ConsoleApp1
         float turnSpeed = 1f;
         float armor = 100f;
         float barrelPlace = 0f;
+        string name = "Basic";
+        public string Name { get { return name; } }
         public Texture2D Tex { get { return tex; } }
         public float MoveSpeed { get { return moveSpeed; } }
         public float TurnSpeed { get { return turnSpeed; } }
@@ -142,6 +144,10 @@ namespace ConsoleApp1
             turnSpeed = turn;
             armor = arm;
             barrelPlace = barrel;
+        }
+        public void Rename(string n)
+        {
+            name = n;
         }
     }
 
@@ -175,6 +181,14 @@ namespace ConsoleApp1
         float reloadTime;
         int lifetime;
         Vector2 offset = new Vector2(-10, 0);
+        Sound loadSound;
+        public int loadPlay = 45;
+        public bool guided = false;
+        public float steer = 0f;
+
+        string name = "Basic";
+
+        public string Name { get { return name; } }
         public Texture2D Tex {get { return tex; } }
         public Texture2D BulTex {get { return bulTex; } }
         public float DamageMult {get { return damageMult; } }
@@ -197,6 +211,17 @@ namespace ConsoleApp1
             this.offset.x = offset;
             this.offset.y = offset_;
             this.lifetime = lifetime;
+        }
+        public void Rename(string n)
+        {
+            name = n;
+        }
+        public void Details(Sound load, int load_, bool guide, float rot)
+        {
+            loadSound = load;
+            loadPlay = load_;
+            guided = guide;
+            steer = rot;
         }
     }
     
