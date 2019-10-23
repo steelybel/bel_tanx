@@ -30,6 +30,47 @@ namespace ConsoleApp1
         {
             get { return children; }
         }
+
+        public Vector3 position
+        {
+            get { return new Vector3(globalTransform.m7, globalTransform.m8, globalTransform.m9); }
+        }
+
+        Vector3 minVal = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+        Vector3 maxVal = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+
+        Rectangle fakeBox = new Rectangle(-16, 16, 32, 32);
+        Color hitboxColor = Color.GREEN;
+        public AABB blankHitBox = new AABB(Vector3.Zero,Vector3.Zero);
+        public List<Vector3> myPoints = new List<Vector3>()
+        {
+            new Vector3(-16, -16, 0),
+            new Vector3(-16, 16, 0),
+            new Vector3(16, 16, 0),
+            new Vector3(16, -16, 0)
+        };
+        public void Vector3MinMax()
+        {
+            minVal = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
+            maxVal = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+            for (int i = 0; i < myPoints.Count; i++)
+            {
+                if (myPoints[i].x + globalTransform.m7 > maxVal.x)
+                    maxVal.x = myPoints[i].x + globalTransform.m7;
+                if (myPoints[i].y + globalTransform.m8 > maxVal.y)
+                    maxVal.y = myPoints[i].y + globalTransform.m8;
+                if (myPoints[i].x + globalTransform.m7 < minVal.x)
+                    minVal.x = myPoints[i].x + globalTransform.m7;
+                if (myPoints[i].y + globalTransform.m8 < minVal.y)
+                    minVal.y = myPoints[i].y + globalTransform.m8;
+            }
+        }
+        public void HitBox()
+        {
+            blankHitBox.Fit(myPoints);
+            blankHitBox.min += position;
+            blankHitBox.max += position;
+        }
         public SceneObject()
         {
 
@@ -116,6 +157,14 @@ namespace ConsoleApp1
             {
                 child.Draw();
             }
+            //hitbox
+            HitBox();
+            Vector3MinMax();
+            
+            //DrawLine((int)minVal.x, (int)minVal.y, (int)minVal.x, (int)maxVal.y, hitboxColor);
+            //DrawLine((int)minVal.x, (int)maxVal.y, (int)maxVal.x, (int)maxVal.y, hitboxColor);
+            //DrawLine((int)maxVal.x, (int)maxVal.y, (int)maxVal.x, (int)minVal.y, hitboxColor);
+            //DrawLine((int)maxVal.x, (int)minVal.y, (int)minVal.x, (int)minVal.y, hitboxColor);
         }
         ~SceneObject()
         {
@@ -130,48 +179,15 @@ namespace ConsoleApp1
         }
     }
 
-    public class Hitbox : SceneObject
-    {
-        bool circle = false;
-        private float width = 1f;
-        private float height = 1f;
-        public float setWidth { get { return width; } }
-        public float setHeight { get { return height; } }
-        public Hitbox(float width, float height)
-        {
-            this.width = width;
-            this.height = height;
-        }
-        public override void OnUpdate(float deltaTime)
-        {
-            if (setWidth != width) { width = setWidth; }
-            if (setHeight != height) { height = setHeight; }
-        }
-        public override void OnDraw()
-        {
-            float rotation = (float)Math.Atan2(
-                globalTransform.m2, globalTransform.m1);
-            if (!circle)
-            {
-                float rot_ = rotation * (float)(180.0f / Math.PI);
-                float x = globalTransform.m7; float y = globalTransform.m8;
-                Vector2 topLeft = new Vector2((x - (width / 2)) * rot_, (y - (height / 2)) * rot_);
-                Vector2 topRight = new Vector2((x + (width / 2)) * rot_, (y - (height / 2)) * rot_);
-                Vector2 botLeft = new Vector2((x - (width / 2)) * rot_, (y + (height / 2)) * rot_);
-                Vector2 botRight = new Vector2((x + (width / 2)) * rot_, (y + (height / 2)) * rot_);
-                DrawLineV(topLeft, topRight, Color.GREEN);
-                DrawLineV(botLeft, botRight, Color.GREEN);
-                DrawLineV(topLeft, botLeft, Color.GREEN);
-                DrawLineV(topRight, botRight, Color.GREEN);
-            }
-        }
-    }
     public class Bullet : SceneObject
     {
         private int lifetime = 59;
         private int timeLeft = 0;
-        int bulletSpeed = 600;
+        private float bulletSpeed = 600f;
         public int TimeLeft { get { return timeLeft; } }
+        public bool Explod { get { return explode; } }
+        private bool explode = true;
+        public Effect explosion = new Effect();
         public Bullet()
         {
 
@@ -184,7 +200,10 @@ namespace ConsoleApp1
                 timeLeft--;
                 Translate(facing.x, facing.y);
             }
-            else timeLeft = 0;
+            else
+            {
+                timeLeft = 0;
+            }
         }
         public void Face(SceneObject turret)
         {
@@ -195,6 +214,19 @@ namespace ConsoleApp1
         public void Reset()
         {
             timeLeft = lifetime;
+            explode = false;
+        }
+        public void SetStats(Barrel barrel)
+        {
+            bulletSpeed = barrel.Speed;
+            lifetime = barrel.LifeTime;
+        }
+        public void Explode(Effect spawn)
+        {
+            timeLeft = 0;
+            spawn.SetPosition(GlobalTransform.m7, GlobalTransform.m8);
+            spawn.Activate();
+            explode = true;
         }
     }
     public class Effect : SceneObject
@@ -202,17 +234,18 @@ namespace ConsoleApp1
         private int lifetime = 10;
         private int timeLeft = 0;
         public int TimeLeft { get { return timeLeft; } }
+        public int LifeTime { get { return lifetime; } }
         public override void OnUpdate(float deltaTime)
         {
             if (timeLeft > 0) timeLeft--;
         }
-        public override void OnDraw()
-        {
-            if (timeLeft <= 0) return;
-        }
         public void Activate()
         {
             timeLeft = lifetime;
+        }
+        public void ChangeLifetime(int lifetime)
+        {
+            this.lifetime = lifetime;
         }
     }
 }

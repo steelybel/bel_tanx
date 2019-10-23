@@ -12,6 +12,8 @@ namespace ConsoleApp1
             int screenWidth = 1280;
             int screenHeight = 720;
 
+            bool paused = false;
+
             Game game = new Game();
 
 
@@ -31,7 +33,15 @@ namespace ConsoleApp1
 
                 // Draw
                 //----------------------------------------------------------------------------------
-                game.Update();
+
+                if (!game.paused)
+                {
+                    game.Update();
+                }
+                else
+                {
+                    game.Paused();
+                }
                 game.Draw();
                 //----------------------------------------------------------------------------------
             }
