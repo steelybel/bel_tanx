@@ -13,6 +13,10 @@ namespace ConsoleApp1
         protected List<SceneObject> children = new List<SceneObject>();
         protected Matrix3 localTransform = new Matrix3();
         protected Matrix3 globalTransform = new Matrix3();
+        public float health = 0f;
+        public bool passThru = false;
+        private bool obstacle = false;
+        public bool hitboxDisplay = false;
 
         public Matrix3 LocalTransform
         {
@@ -31,6 +35,12 @@ namespace ConsoleApp1
             get { return children; }
         }
 
+        public SceneObject(float hp, bool pass)
+        {
+            obstacle = false;
+            health = hp; passThru = pass;
+        }
+
         public Vector3 position
         {
             get { return new Vector3(globalTransform.m7, globalTransform.m8, globalTransform.m9); }
@@ -38,17 +48,12 @@ namespace ConsoleApp1
 
         Vector3 minVal = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
         Vector3 maxVal = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
-
+        public Vector3 MinVal { get { return minVal; } }
+        public Vector3 MaxVal { get { return maxVal; } }
         Rectangle fakeBox = new Rectangle(-16, 16, 32, 32);
         Color hitboxColor = Color.GREEN;
         public AABB blankHitBox = new AABB(Vector3.Zero,Vector3.Zero);
-        public List<Vector3> myPoints = new List<Vector3>()
-        {
-            new Vector3(-16, -16, 0),
-            new Vector3(-16, 16, 0),
-            new Vector3(16, 16, 0),
-            new Vector3(16, -16, 0)
-        };
+        public List<Vector3> myPoints = new List<Vector3>();
         public void Vector3MinMax()
         {
             minVal = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
@@ -74,6 +79,10 @@ namespace ConsoleApp1
         public SceneObject()
         {
 
+        }
+        public void Damage(float damage)
+        {
+            health -= damage;
         }
         public int GetChildCount() { return children.Count; }
 
@@ -153,6 +162,7 @@ namespace ConsoleApp1
         public void Draw()
         {
             OnDraw();
+            if (obstacle && health <= 0) return;
             foreach(SceneObject child in children)
             {
                 child.Draw();
@@ -161,10 +171,13 @@ namespace ConsoleApp1
             HitBox();
             Vector3MinMax();
             
-            //DrawLine((int)minVal.x, (int)minVal.y, (int)minVal.x, (int)maxVal.y, hitboxColor);
-            //DrawLine((int)minVal.x, (int)maxVal.y, (int)maxVal.x, (int)maxVal.y, hitboxColor);
-            //DrawLine((int)maxVal.x, (int)maxVal.y, (int)maxVal.x, (int)minVal.y, hitboxColor);
-            //DrawLine((int)maxVal.x, (int)minVal.y, (int)minVal.x, (int)minVal.y, hitboxColor);
+            if (myPoints.Count > 0 && hitboxDisplay)
+            {
+                DrawLine((int)minVal.x, (int)minVal.y, (int)minVal.x, (int)maxVal.y, hitboxColor);
+                DrawLine((int)minVal.x, (int)maxVal.y, (int)maxVal.x, (int)maxVal.y, hitboxColor);
+                DrawLine((int)maxVal.x, (int)maxVal.y, (int)maxVal.x, (int)minVal.y, hitboxColor);
+                DrawLine((int)maxVal.x, (int)minVal.y, (int)minVal.x, (int)minVal.y, hitboxColor);
+            }
         }
         ~SceneObject()
         {
@@ -187,6 +200,7 @@ namespace ConsoleApp1
         public int TimeLeft { get { return timeLeft; } }
         public bool Explod { get { return explode; } }
         private bool explode = true;
+        public bool pass = false;
         public Effect explosion = new Effect();
         public Bullet()
         {
@@ -215,6 +229,11 @@ namespace ConsoleApp1
         {
             timeLeft = lifetime;
             explode = false;
+            pass = false;
+        }
+        public void Destroy()
+        {
+            timeLeft = 0;
         }
         public void SetStats(Barrel barrel)
         {
@@ -242,6 +261,10 @@ namespace ConsoleApp1
         public void Activate()
         {
             timeLeft = lifetime;
+        }
+        public void Deactivate()
+        {
+            timeLeft = 0;
         }
         public void ChangeLifetime(int lifetime)
         {

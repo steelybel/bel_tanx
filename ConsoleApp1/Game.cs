@@ -10,7 +10,7 @@ namespace ConsoleApp1
 {
     class Game
     {
-        public bool paused = false;
+        public bool paused = true;
         Stopwatch stopwatch = new Stopwatch();
         private long currentTime = 0;
         private long lastTime = 0;
@@ -18,14 +18,7 @@ namespace ConsoleApp1
         private int fps = 1;
         private int frames;
         private float deltaTime = 0.005f;
-        public float reloading = 60f;
-        private float reload = 0f;
-        public float maxArmor = 100f;
-        private float armor = 100f;
         private float rotSpeed = 1f;
-        private float rotVolume = 0f;
-        private Color loadColor = Color.GREEN;
-
         bool soundOn = false;
 
 
@@ -34,22 +27,27 @@ namespace ConsoleApp1
         Sound snd_fire;
         Sound snd_load;
 
-        SceneObject tankObject = new SceneObject();
-        SceneObject turretObject = new SceneObject();
+        Player p1 = new Player();
+        Player p2 = new Player();
 
-        List<Bullet> bullets = new List<Bullet>();
-        SpriteObject tankSprite = new SpriteObject();
-        SpriteObject turretSprite = new SpriteObject();
+        float bulRad = 15.0f;
+        float obsRad = 24.0f;
+        float obsHealth = 50.0f;
+
         Effect explosionFX = new Effect();
         AnimObject expSprite = new AnimObject();
+        Effect explosionFX_ = new Effect();
+        AnimObject expSprite_ = new AnimObject();
 
         Bullet bullet = new Bullet();
         SpriteObject bulspr = new SpriteObject();
 
-        Effect shotFX = new Effect();
-        SpriteObject shotSprite = new SpriteObject();
+        Bullet bullet_ = new Bullet();
+        SpriteObject bulspr_ = new SpriteObject();
+        //OBSTACLES
 
-        //EQUIPMENT
+        List<SceneObject> obstacles = new List<SceneObject>();
+        Vector3[] obsPositions = new Vector3[9];
 
         //MODULAR STUFF
         Body body = new Body();
@@ -58,6 +56,7 @@ namespace ConsoleApp1
         int gunPick = 0;
 
         List<Body> bodies = new List<Body>();
+        List<Body> bodies2 = new List<Body>();
         List<Barrel> barrels = new List<Barrel>();
 
         Texture2D[] expSpr = new Texture2D[5];
@@ -65,7 +64,10 @@ namespace ConsoleApp1
         //OBJECT POOL
         //ObjectPool<Bullet> objPool = new ObjectPool<Bullet>();
         //ObjectPool<SpriteObject> sprPool = new ObjectPool<SpriteObject>();
-
+        string helper = $"Press Enter when you are both done.";
+        string helper0 = $"Debug keys:\nH - toggle hitbox display\nInsert - Salty reset";
+        string helper1 = $"P1:\nW, A, S, D to move\nQ, E to rotate turret\nSpace to fire";
+        string helper2 = $"P2 (numpad):\n8, 4, 5, 6 to move\n7, 9 to rotate turret\n0 to fire";
         Rectangle crap = new Rectangle(0, 0, 128, 32);
 
         public void Init()
@@ -80,8 +82,16 @@ namespace ConsoleApp1
             snd_load = LoadSound("Resources/Sound/reload.ogg");
 
 
+            for (int p = 0; p < 9; p++)
+            {
+                float b = (obsPositions.Length / 2);
+                float c = p - b;
+                obsPositions[p] = new Vector3((GetScreenWidth() / 2) + (p*64) - (b*64), (GetScreenHeight() / 2) + (((float)Math.Pow(c,3)) + (9*c)),0);
+            }
+
             Texture2D body1 = LoadTexture("Resources/tankBody_blue_outline.png");
-            Texture2D body2 = LoadTexture("Resources/tankBody_bigRed_outline.png");
+            Texture2D body1a = LoadTexture("Resources/tankBody_red_outline.png");
+            Texture2D body2 = LoadTexture("Resources/tankBody_darkLarge_outline.png");
             Texture2D body3 = LoadTexture("Resources/tankBody_huge_outline.png");
             Texture2D bodyS = LoadTexture("Resources/tankBody_dark.png");
             Texture2D barrel1 = LoadTexture("Resources/tankBlue_barrel1_outline.png");
@@ -95,18 +105,22 @@ namespace ConsoleApp1
             Texture2D s_barrel6 = LoadTexture("Resources/specialBarrel6_outline.png");
             Texture2D s_barrel7 = LoadTexture("Resources/specialBarrel7_outline.png");
             Texture2D rocketL = LoadTexture("Resources/barrelGrey_side.png");
-            Texture2D bullet1 = LoadTexture("Resources/bulletBlue1_outline.png");
-            Texture2D bullet2 = LoadTexture("Resources/bulletBlue2_outline.png");
-            Texture2D bullet3 = LoadTexture("Resources/bulletBlue3_outline.png");
+            Texture2D bullet1 = LoadTexture("Resources/bulletDark1_outline.png");
+            Texture2D bullet2 = LoadTexture("Resources/bulletDark2_outline.png");
+            Texture2D bullet3 = LoadTexture("Resources/bulletDark3_outline.png");
             Texture2D bulletM = LoadTexture("Resources/bulletDark1.png");
             Texture2D rocket1 = LoadTexture("Resources/spaceMissiles_003.png");
             Texture2D rocket2 = LoadTexture("Resources/spaceMissiles_006.png");
+            Texture2D obs1 = LoadTexture("Resources/barricadeWood.png");
+            Texture2D obs2 = LoadTexture("Resources/sandbagBeige.png");
 
             Body bodyBasic = new Body(body1, 100f, 1f, 100f, 0f);
             bodyBasic.Rename("Cruiser tank");
-            Body bodyBig = new Body(body2, 75f, 0.8f, 125f, 16f);
+            Body bodyBasic2 = new Body(body1a, 100f, 1f, 100f, 0f);
+            bodyBasic2.Rename("Cruiser tank");
+            Body bodyBig = new Body(body2, 75f, 0.8f, 125f, 8f);
             bodyBig.Rename("Infantry tank");
-            Body bodyBigger = new Body(body3, 50f, 0.6f, 150f, -16f);
+            Body bodyBigger = new Body(body3, 50f, 0.6f, 150f, -32f);
             bodyBigger.Rename("Super-heavy tank");
 
             //bodies.Add(bodySmall);
@@ -114,20 +128,24 @@ namespace ConsoleApp1
             bodies.Add(bodyBig);
             bodies.Add(bodyBigger);
 
+            bodies2.Add(bodyBasic2);
+            bodies2.Add(bodyBig);
+            bodies2.Add(bodyBigger);
+
             Ammo ammoAvg = new Ammo(bullet1, 1f, 600);
             Ammo ammoFst = new Ammo(bullet3, 0.75f, 700);
             Ammo ammoHvy = new Ammo(bullet2, 1.25f, 500);
 
-            Barrel barrelAvg = new Barrel(barrel2, bullet1, 1f, 600, 59, 75, -8f, 0);
+            Barrel barrelAvg = new Barrel(s_barrel6, bullet1, 1f, 600, 59, 75, -8f, 0);
             barrelAvg.Rename("105mm cannon");
             barrelAvg.Details(snd_load, 45, false, 0.0f);
-            Barrel barrelPrc = new Barrel(barrel3, bullet3, 0.75f, 700, 58, 60, -8f, 0);
-            barrelPrc.Rename("Armor-piercing Sabot");
+            Barrel barrelPrc = new Barrel(s_barrel7, bullet3, 0.75f, 700, 58, 60, -8f, 0);
+            barrelPrc.Rename("Self-propelled Sabot");
             barrelPrc.Details(snd_load, 45, false, 0.0f);
-            Barrel barrelHwz = new Barrel(barrel1, bullet2, 1.25f, 500, 59, 90, -8f, 0);
+            Barrel barrelHwz = new Barrel(s_barrel5, bullet2, 1.25f, 500, 59, 90, -8f, 0);
             barrelHwz.Rename("120mm Howitzer");
             barrelHwz.Details(snd_load, 45, false, 0.0f);
-            Barrel barrel45g = new Barrel(s_barrel4, bulletM, 0.5f, 900, 28, 30, -16f, 0); //20mm machine gun
+            Barrel barrel45g = new Barrel(s_barrel4, bulletM, 0.5f, 900, 28, 30, -16f, -4f); //20mm machine gun
             barrel45g.Rename("45mm gun");
             barrel45g.Details(snd_load, 45, false, 0.0f);
             Barrel barrelMrl = new Barrel(s_barrel1, rocket1, 2f, 850, 28, 120, -16f, 0);
@@ -156,36 +174,63 @@ namespace ConsoleApp1
                 LoadTexture("Resources/explosion5.png"),
             };
             expSprite.Load(expSpr);
-
-            tankSprite.Load("Resources/tankBody_blue_outline.png");
-            tankSprite.SetRotate(-90 * (float)(Math.PI / 180.0f));
-            tankSprite.SetPosition(-tankSprite.Width / 2.0f, tankSprite.Height / 2.0f);
-
-            turretSprite.Load("Resources/tankBlue_barrel1_outline.png");
-            turretSprite.SetRotate(-90 * (float)(Math.PI / 180.0f));
-            turretSprite.SetPosition(-10, turretSprite.Width / 2.0f);
+            expSprite_.Load(expSpr);
 
             bulspr.Load("Resources/bulletBlue1_outline.png");
             bulspr.SetRotate(90 * (float)(Math.PI / 180.0f));
-            bulspr.SetPosition(0, -bulspr.Width / 2.0f);
+            bulspr.SetPosition(90, 0);
 
-            shotSprite.Load("Resources/shotLarge.png");
-            shotFX.AddChild(shotSprite);
-            shotFX.SetPosition(turretSprite.Width / 2.0f, turretSprite.Height);
-            shotSprite.SetPosition( - (shotSprite.Width / 2.0f), 0);
+            bulspr_.Load("Resources/bulletBlue1_outline.png");
+            bulspr_.SetRotate(90 * (float)(Math.PI / 180.0f));
+            bulspr_.SetPosition(90, 0);
 
             explosionFX.AddChild(expSprite);
             explosionFX.ChangeLifetime(10);
+            explosionFX_.AddChild(expSprite_);
+            explosionFX_.ChangeLifetime(10);
 
             bullet.explosion = explosionFX;
+            bullet_.explosion = explosionFX_;
+
             bullet.AddChild(bulspr);
+            bullet_.AddChild(bulspr_);
 
-            turretObject.AddChild(turretSprite);
-            turretSprite.AddChild(shotFX);
-            tankObject.AddChild(tankSprite);
-            tankObject.AddChild(turretObject);
-            tankObject.SetPosition(GetScreenWidth() / 4f, (GetScreenHeight() / 4f) * 3);
+            bullet.myPoints.Add(new Vector3(-16, 16, 0));
+            bullet.myPoints.Add(new Vector3(16, 16, 0));
+            bullet.myPoints.Add(new Vector3(16, -16, 0));
+            bullet.myPoints.Add(new Vector3(-16, -16, 0));
+            bullet_.myPoints.Add(new Vector3(-16, 16, 0));
+            bullet_.myPoints.Add(new Vector3(16, 16, 0));
+            bullet_.myPoints.Add(new Vector3(16, -16, 0));
+            bullet_.myPoints.Add(new Vector3(-16, -16, 0));
 
+            p1.Init(bodies, barrels, 1);
+            p2.Init(bodies2, barrels, 2);
+
+            //
+            for (int p = 0; p < obsPositions.Length; p++)
+            {
+                float half = obsPositions.Length / 2;
+                float third = obsPositions.Length / 3;
+                SceneObject buh = new SceneObject(obsHealth, false);
+                SpriteObject crap = new SpriteObject(); crap.Load(obs1);
+                buh.AddChild(crap);
+                //buh.Rotate(pos.z * ((float)(Math.PI / 180.0f)));
+                buh.SetPosition(obsPositions[p].x, obsPositions[p].y);
+                crap.SetPosition(-crap.Width / 2, -crap.Height / 2);
+                buh.myPoints.Add(new Vector3(-obsRad, obsRad, 0));
+                buh.myPoints.Add(new Vector3(obsRad, obsRad, 0));
+                buh.myPoints.Add(new Vector3(obsRad, -obsRad, 0));
+                buh.myPoints.Add(new Vector3(-obsRad, -obsRad, 0));
+                obstacles.Add(buh);
+                if (p < (int)third-1 || p > (int)(third*2)-1)
+                {
+                    crap.Load(obs2);
+                }
+            }
+            //
+            p1.Place(new Vector2(GetScreenWidth() / 4, GetScreenHeight() / 4 * 3));
+            p2.Place(new Vector2(GetScreenWidth() / 4 * 3, GetScreenHeight() / 4));
         }
         public void Shutdown()
         {
@@ -210,31 +255,133 @@ namespace ConsoleApp1
 
             body = bodies[bodyPick];
             barrel = barrels[gunPick];
-
-            if (IsKeyPressed(KeyboardKey.KEY_P))
+            //WIN CONDITION CHECK
+            if (p1.armor <= 0 || p2.armor <= 0)
             {
+                paused = true;
+                if (p1.armor <= 0)
+                {
+                    p2.wins++;
+                    p2.winStreak++;
+                    p1.winStreak = 0;
+                }
+                if (p2.armor <= 0)
+                {
+                    p1.wins++;
+                    p1.winStreak++;
+                    p2.winStreak = 0;
+                }
+            }
+            if (IsKeyPressed(KeyboardKey.KEY_INSERT))
+            {
+                Reset();
                 paused = true;
             }
 
             if (IsKeyPressed(KeyboardKey.KEY_M))
             {
-                soundOn = !soundOn;
+                //soundOn = !soundOn;
             }
-            tankSprite.Load(body.Tex);
-            tankSprite.SetRotate(-90 * (float)(Math.PI / 180.0f));
-            tankSprite.SetPosition(-tankSprite.Width / 2.0f, tankSprite.Height / 2.0f);
-            turretObject.SetPosition(body.BarrelPlace, 0);
-            turretSprite.Load(barrel.Tex);
-            turretSprite.SetPosition(barrel.Offset.x, (turretSprite.Width / 2.0f) + barrel.Offset.y);
-            bulspr.Load(barrel.BulTex);
-            bulspr.SetPosition(0, -bulspr.Width / 2.0f);
-            shotFX.SetPosition((turretSprite.Width / 2.0f) + barrel.Offset.y, turretSprite.Height);
-            shotSprite.SetPosition(-(shotSprite.Width / 2.0f), 0);
 
-            reloading = barrel.ReloadTime;
+            if (IsKeyPressed(KeyboardKey.KEY_H))
+            {
+                p1.HitboxToggle();
+                p2.HitboxToggle();
+                bullet.hitboxDisplay = !bullet.hitboxDisplay;
+                bullet_.hitboxDisplay = !bullet_.hitboxDisplay;
+                foreach(SceneObject o in obstacles)
+                {
+                    o.hitboxDisplay = !o.hitboxDisplay;
+                }
+            }
 
-            if (reload < reloading) { reload++; loadColor = Color.LIME; }
-            else { reload = reloading; loadColor = Color.GREEN; }
+
+
+            //
+            //COLLISIONS!!!!!!!!!!!!!!
+            // -- Bullet collides with player
+            if (p1.Hitbox.Overlaps(bullet_.blankHitBox) && bullet_.TimeLeft > 0)
+            {
+                bullet_.Destroy();
+                p1.TakeDamage(25 * barrels[p2.gunPick].DamageMult);
+            }
+            if (p2.Hitbox.Overlaps(bullet.blankHitBox) && bullet.TimeLeft > 0)
+            {
+                bullet.Destroy();
+                p2.TakeDamage(25 * barrels[p1.gunPick].DamageMult);
+            }
+            // - Obstacle collisions
+            foreach (SceneObject obs in obstacles)
+            {
+                if (obs.health > 0)
+                {
+                    // -- with bullet
+                    if (obs.blankHitBox.Overlaps(bullet.blankHitBox) && bullet.TimeLeft > 0)
+                    {
+                        if (!obs.passThru)
+                        {
+                            bullet.Destroy();
+                            obs.Damage(25 * barrels[p1.gunPick].DamageMult);
+                            Console.Write("butt");
+                        }
+                        else
+                        {
+                            if (!bullet.pass)
+                            {
+                                bullet.pass = true;
+                                obs.Damage(25 * barrels[p1.gunPick].DamageMult);
+                                Console.Write("butt");
+                            }
+                            else
+                            {
+
+                            }
+                        }
+                    }
+                    if (obs.blankHitBox.Overlaps(bullet_.blankHitBox) && bullet_.TimeLeft > 0)
+                    {
+                        if (!obs.passThru)
+                        {
+                            bullet_.Destroy();
+                            obs.Damage(25 * barrels[p2.gunPick].DamageMult);
+                            //Console.Write("butt");
+                        }
+                        else
+                        {
+                            if (!bullet.pass)
+                            {
+                                bullet_.pass = true;
+                                obs.Damage(25 * barrels[p2.gunPick].DamageMult);
+                                //Console.Write("butt");
+                            }
+                            else
+                            {
+
+                            }
+                        }
+                    }
+                    // with player
+                    if (obs.blankHitBox.Overlaps(p1.Hitbox))
+                    {
+                        if (!obs.passThru)
+                        {
+                            p1.Move(deltaTime, -64);
+                        }
+                    }
+                    if (obs.blankHitBox.Overlaps(p2.Hitbox))
+                    {
+                        if (!obs.passThru)
+                        {
+                            p2.Move(deltaTime, -64);
+                        }
+                    }
+                }
+            }
+            //
+            bulspr.Load(barrels[p1.gunPick].BulTex);
+            bulspr.SetPosition(bulspr.Height / 2.0f, -bulspr.Width / 2.0f);
+            bulspr_.Load(barrels[p2.gunPick].BulTex);
+            bulspr_.SetPosition(bulspr.Height / 2.0f, -bulspr.Width / 2.0f);
 
 
             if (explosionFX.TimeLeft <= 0)
@@ -243,8 +390,16 @@ namespace ConsoleApp1
             }
             explosionFX.Update(deltaTime);
             expSprite.SetPosition(-expSprite.Width / 2.0f, -expSprite.Height / 2.0f);
-            tankObject.Update(deltaTime);
-            bullet.SetStats(barrel);
+
+            if (explosionFX_.TimeLeft <= 0)
+            {
+                expSprite_.Reset();
+            }
+            explosionFX_.Update(deltaTime);
+            expSprite_.SetPosition(-expSprite_.Width / 2.0f, -expSprite_.Height / 2.0f);
+
+            bullet.SetStats(barrels[p1.gunPick]);
+            bullet_.SetStats(barrels[p2.gunPick]);
             if (bullet.TimeLeft > 0)
             {
                 bullet.Update(deltaTime);
@@ -257,93 +412,136 @@ namespace ConsoleApp1
                 }
                 else
                 {
-                    bullet.Face(turretObject);
+                    bullet.Face(p1.TurretPointer);
                 }
             }
-            
+            if (bullet_.TimeLeft > 0)
+            {
+                bullet_.Update(deltaTime);
+            }
+            else
+            {
+                if (!bullet_.Explod)
+                {
+                    bullet_.Explode(explosionFX_);
+                }
+                else
+                {
+                    bullet_.Face(p2.TurretPointer);
+                }
+            }
 
             //DEBUG
-            if (IsKeyDown(KeyboardKey.KEY_KP_1))
-            {
-                gunPick = 0;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_2))
-            {
-                gunPick = 1;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_3))
-            {
-                gunPick = 2;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_4))
-            {
-                gunPick = 3;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_5))
-            {
-                gunPick = 4;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_6))
-            {
-                gunPick = 0;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_7))
-            {
-                bodyPick = 0;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_8))
-            {
-                bodyPick = 1;
-            }
-            if (IsKeyDown(KeyboardKey.KEY_KP_9))
-            {
-                bodyPick = 2;
-            }
+            //if (IsKeyDown(KeyboardKey.KEY_KP_1))
+            //{
+            //    gunPick = 0;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_2))
+            //{
+            //    gunPick = 1;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_3))
+            //{
+            //    gunPick = 2;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_4))
+            //{
+            //    gunPick = 3;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_5))
+            //{
+            //    gunPick = 4;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_6))
+            //{
+            //    gunPick = 0;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_7))
+            //{
+            //    bodyPick = 0;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_8))
+            //{
+            //    bodyPick = 1;
+            //}
+            //if (IsKeyDown(KeyboardKey.KEY_KP_9))
+            //{
+            //    bodyPick = 2;
+            //}
             //tank control
             if (IsKeyDown(KeyboardKey.KEY_A))
             {
-                tankObject.Rotate(-deltaTime * body.TurnSpeed);
+                p1.Rotate(-deltaTime * body.TurnSpeed);
             }
             if (IsKeyDown(KeyboardKey.KEY_D))
             {
-                tankObject.Rotate(deltaTime * body.TurnSpeed);
+                p1.Rotate(deltaTime * body.TurnSpeed);
             }
             if (IsKeyDown(KeyboardKey.KEY_W))
             {
-                Vector3 facing = new Vector3(
-                    tankObject.LocalTransform.m1,
-                    tankObject.LocalTransform.m2, 1) * deltaTime * body.MoveSpeed;
-                tankObject.Translate(facing.x, facing.y);
+                p1.Move(deltaTime, true);
             }
             if (IsKeyDown(KeyboardKey.KEY_S))
             {
-                Vector3 facing = new Vector3(
-                    tankObject.LocalTransform.m1,
-                    tankObject.LocalTransform.m2, 1) * deltaTime * -body.MoveSpeed;
-                tankObject.Translate(facing.x, facing.y);
+                p1.Move(deltaTime, false);
             }
             if (IsKeyDown(KeyboardKey.KEY_Q))
             {
-                turretObject.Rotate(-deltaTime * rotSpeed);
-                if (barrel.guided) bullet.Rotate(-deltaTime * barrel.steer);
+                p1.GunRotate(-deltaTime * rotSpeed);
+                if (barrels[p1.gunPick].guided) bullet.Rotate(-deltaTime * barrels[p1.gunPick].steer);
             }
             if (IsKeyDown(KeyboardKey.KEY_E))
             {
-                turretObject.Rotate(deltaTime * rotSpeed);
-                if (barrel.guided) bullet.Rotate(deltaTime * barrel.steer);
+                p1.GunRotate(deltaTime * rotSpeed);
+                if (barrels[p1.gunPick].guided) bullet.Rotate(deltaTime * barrels[p1.gunPick].steer);
             }
-
-            if (IsKeyPressed(KeyboardKey.KEY_SPACE) && reload >= reloading && bullet.TimeLeft <= 0)
+            if (IsKeyPressed(KeyboardKey.KEY_SPACE) && p1.reload >= p1.reloading && bullet.TimeLeft <= 0)
             {
                 bullet.Reset();
-                reload = 0;
-                shotFX.Activate();
+                p1.Fire();
                 if (soundOn) PlaySound(snd_fire);
             }
 
-            if(soundOn)
+
+            if (IsKeyDown(KeyboardKey.KEY_KP_4))
             {
-                if (reload == reloading - 45) PlaySound(snd_load);
+                p2.Rotate(-deltaTime * body.TurnSpeed);
+            }
+            if (IsKeyDown(KeyboardKey.KEY_KP_6))
+            {
+                p2.Rotate(deltaTime * body.TurnSpeed);
+            }
+            if (IsKeyDown(KeyboardKey.KEY_KP_8))
+            {
+                p2.Move(deltaTime, true);
+            }
+            if (IsKeyDown(KeyboardKey.KEY_KP_5))
+            {
+                p2.Move(deltaTime, false);
+            }
+            if (IsKeyDown(KeyboardKey.KEY_KP_7))
+            {
+                p2.GunRotate(-deltaTime * rotSpeed);
+                if (barrels[p2.gunPick].guided) bullet_.Rotate(-deltaTime * barrels[p2.gunPick].steer);
+            }
+            if (IsKeyDown(KeyboardKey.KEY_KP_9))
+            {
+                p2.GunRotate(deltaTime * rotSpeed);
+                if (barrels[p2.gunPick].guided) bullet_.Rotate(deltaTime * barrels[p2.gunPick].steer);
+            }
+            if (IsKeyPressed(KeyboardKey.KEY_KP_0) && p2.reload >= p2.reloading && bullet_.TimeLeft <= 0)
+            {
+                bullet_.Reset();
+                p2.Fire();
+                if (soundOn) PlaySound(snd_fire);
+            }
+
+            p1.Update(deltaTime);
+            p2.Update(deltaTime);
+
+            if (soundOn)
+            {
+                if (p1.reload == p1.reloading - 45) PlaySound(snd_load);
                 if ((IsKeyDown(KeyboardKey.KEY_W) || IsKeyDown(KeyboardKey.KEY_S)))
                 {
                     if (IsSoundPlaying(snd_drive))
@@ -388,14 +586,6 @@ namespace ConsoleApp1
         }
         public void Paused()
         {
-            foreach (Body body in bodies)
-            {
-
-            }
-            foreach (Barrel gun in barrels)
-            {
-
-            }
             currentTime = stopwatch.ElapsedMilliseconds;
             deltaTime = (currentTime - lastTime) / 1000.0f;
 
@@ -408,56 +598,200 @@ namespace ConsoleApp1
             }
             frames++;
 
-            if (IsKeyPressed(KeyboardKey.KEY_P))
+            if (!(p1.armor > 0) || !(p2.armor > 0))
             {
-                paused = false;
+                if (IsKeyReleased(KeyboardKey.KEY_ENTER))
+                {
+                    Reset();
+                    p1.Reset();
+                    p2.Reset();
+                }
             }
+            else
+            {
+                if (IsKeyPressed(KeyboardKey.KEY_ENTER))
+                {
+                    paused = false;
+                    p1.Reset();
+                    p2.Reset();
+                }
 
-            lastTime = currentTime;
+                if (IsKeyPressed(KeyboardKey.KEY_A))
+                {
+                    if (p1.bodyPick == 0) p1.bodyPick = 2;
+                    else p1.bodyPick -= 1;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_D))
+                {
+                    if (p1.bodyPick == bodies.Count - 1) p1.bodyPick = 0;
+                    else p1.bodyPick++;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_W))
+                {
+                    if (p1.gunPick == 0) p1.gunPick = barrels.Count - 1;
+                    else p1.gunPick -= 1;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_S))
+                {
+                    if (p1.gunPick == barrels.Count - 1) p1.gunPick = 0;
+                    else p1.gunPick++;
+                }
+
+                if (IsKeyPressed(KeyboardKey.KEY_KP_4))
+                {
+                    if (p2.bodyPick == 0) p2.bodyPick = 2;
+                    else p2.bodyPick -= 1;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_KP_6))
+                {
+                    if (p2.bodyPick == bodies.Count - 1) p2.bodyPick = 0;
+                    else p2.bodyPick++;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_KP_8))
+                {
+                    if (p2.gunPick == 0) p2.gunPick = barrels.Count - 1;
+                    else p2.gunPick -= 1;
+                }
+                if (IsKeyPressed(KeyboardKey.KEY_KP_5))
+                {
+                    if (p2.gunPick == barrels.Count - 1) p2.gunPick = 0;
+                    else p2.gunPick++;
+                }
+                lastTime = currentTime;
+            }
         }
         public void Draw()
         {
             BeginDrawing();
 
             ClearBackground(Color.BEIGE);
-            DrawText(fps.ToString(), 10, 10, 12, Color.LIME);
-            DrawText($"{tankObject.GlobalTransform.m1},{tankObject.GlobalTransform.m2}\n{tankObject.GlobalTransform.m4},{tankObject.GlobalTransform.m5}\n{tankObject.GlobalTransform.m7},{tankObject.GlobalTransform.m8}", 10, 20, 12, Color.LIME);
-            DrawText($"{shotFX.TimeLeft}", 10, 80, 12, Color.LIME);
-
-            tankObject.Draw();
+            DrawText(fps.ToString(), 10, 10, 10, Color.LIME);
+            foreach (SceneObject obstacle in obstacles)
+            {
+                if (obstacle.health > 0)obstacle.Draw();
+            }
+            //tankObject.Draw();
+            p1.Draw();
+            p2.Draw();
             explosionFX.Draw();
             if (bullet.TimeLeft > 0)bullet.Draw();
-            DrawRectangle(20, GetScreenHeight() - 148, 24, 128, Color.GRAY);
-            DrawRectangle(20, GetScreenHeight() - 20 - (int)((reload / reloading) * 128), 24, (int)((reload / reloading) * 128), loadColor);
+            explosionFX_.Draw();
+            if (bullet_.TimeLeft > 0)bullet_.Draw();
+
+            string p1wins = $"P1 wins: {p1.wins}";
+            int p1winM = MeasureText(p1wins, 20);
+            string p1winstr = $"P1 win streak: {p1.winStreak}";
+            int p1winstrM = MeasureText(p1wins, 20);
+            string p2wins = $"P2 wins: {p2.wins}";
+            int p2winM = MeasureText(p2wins, 20);
+            string p2winstr = $"P1 win streak: {p2.winStreak}";
+            int p2winstrM = MeasureText(p2wins, 20);
+
+            
+
+            //P1 HUD
+            DrawText("P1", 10, GetScreenHeight() - 30, 20, Color.BLUE);
+            DrawRectangle(40, GetScreenHeight() - 192, 24, 128, Color.GRAY);
+            DrawRectangle(40, GetScreenHeight() - 64 - (int)((p1.reload / p1.reloading) * 128), 24, (int)((p1.reload / p1.reloading) * 128), p1.loadColor);
+            DrawText($"R\nE\nL\nO\nA\nD",10, GetScreenHeight() - 224,20,Color.WHITE);
+            DrawRectangle(64, GetScreenHeight() - 64, 128, 24, Color.GRAY);
+            DrawRectangle(64, GetScreenHeight() - 64, (int)((p1.armor / p1.maxArmor) * 128), 24, Color.SKYBLUE);
+            DrawText($"A R M O R", 64, GetScreenHeight() - 30, 20, Color.WHITE);
+            if (p1.winStreak > 0)
+            {
+                //DrawText(p1winstr,128, GetScreenHeight() - 96,20,Color.BLUE);
+            }
+            //P2 HUD
+            DrawText("P2", GetScreenWidth() - 32, 10, 20, Color.RED);
+            DrawRectangle(GetScreenWidth() - 64, 64, 24, 128, Color.GRAY);
+            DrawRectangle(GetScreenWidth() - 64, 64, 24, (int)((p2.reload / p2.reloading) * 128), p2.loadColor);
+            DrawText($"R\nE\nL\nO\nA\nD", GetScreenWidth() - 24, 48, 20, Color.WHITE);
+            DrawRectangle(GetScreenWidth() - 192, 40, 128, 24, Color.GRAY);
+            DrawRectangle(GetScreenWidth() - 192, 40, (int)((p2.armor / p2.maxArmor) * 128), 24, Color.SKYBLUE);
+            DrawText($"A R M O R", GetScreenWidth() - 168 , 10, 20, Color.WHITE);
+            //DrawCircle((int)tankTL.GlobalTransform.m7, (int)tankTL.GlobalTransform.m8,3,Color.GREEN);
+            if (p2.winStreak > 0)
+            {
+                //DrawText(p2winstr, GetScreenWidth() - 168, 42, 20, Color.RED);
+            }
+
 
             if (paused)
             {
-                Vector2 bodyWritePos = new Vector2((GetScreenWidth() / 5) - (((bodies.Count - 1) * 128) - 48), (GetScreenHeight() / 2) - ((barrels.Count-1) * 64) + 32);
-                Vector2 barrelWritePos = new Vector2(GetScreenWidth() / 5, (GetScreenHeight() / 2) - ((barrels.Count-1) * 32));
-                Vector2 bodyWritePos_ = new Vector2(GetScreenWidth() / 4, (GetScreenHeight() / 2) - (bodies.Count * 32));
-                Vector2 barrelWritePos_ = new Vector2((GetScreenWidth() / 4) * 3, (GetScreenHeight() / 2) - (barrels.Count * 32));
-                for (int b = 0; b < bodies.Count; b++)
+                if (p1.armor > 0 && p2.armor > 0)
                 {
-                    DrawRectangle((int)bodyWritePos.x + b * 144, (int)bodyWritePos.y, 128, 32, (bodyPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
-                    DrawRectangleLines((int)bodyWritePos.x + b * 144, (int)bodyWritePos.y, 128, 32, (bodyPick == b) ? Color.BLUE : Color.GRAY);
-                    int tempM = MeasureText(bodies[b].Name, 12);
-                    DrawText(bodies[b].Name, (int)bodyWritePos.x + (tempM) + (b * 144) - 64, (int)bodyWritePos.y, 12, Color.WHITE);
+
+                    Vector2 bodyWritePos = new Vector2((GetScreenWidth() / 5) - (((bodies.Count - 1) * 128) - 48), (GetScreenHeight() / 2) - ((barrels.Count - 1) * 64) + 32);
+                    Vector2 barrelWritePos = new Vector2(GetScreenWidth() / 5, (GetScreenHeight() / 2) - ((barrels.Count - 1) * 32));
+                    Vector2 bodyWritePos_ = new Vector2((GetScreenWidth() / 5 * 4) - (((bodies.Count - 1) * 128) - 48), (GetScreenHeight() / 2) - ((barrels.Count - 1) * 64) + 32);
+                    Vector2 barrelWritePos_ = new Vector2((GetScreenWidth() / 5) * 4, (GetScreenHeight() / 2) - ((barrels.Count - 1) * 32));
+
+                    int bottomTip = MeasureText(helper, 20);
+                    int debugTip = MeasureText(helper0, 10);
+
+                    for (int b = 0; b < bodies.Count; b++)
+                    {
+                        DrawText(helper, (GetScreenWidth() / 2) - (bottomTip/2), GetScreenHeight() - 64, 20, Color.BROWN);
+                        DrawText(helper0, (GetScreenWidth() / 2) - (debugTip/2), GetScreenHeight() - 128, 10, Color.BROWN);
+                        DrawText(helper1, (int)bodyWritePos.x, (int)bodyWritePos.y - 128, 20, Color.BLUE);
+                        DrawText(helper2, (int)bodyWritePos_.x, (int)bodyWritePos_.y - 128, 20, Color.RED);
+                        DrawRectangle((int)bodyWritePos.x + (b * 144), (int)bodyWritePos.y, 128, 32, (p1.bodyPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                        DrawRectangleLines((int)bodyWritePos.x + (b * 144), (int)bodyWritePos.y, 128, 32, (p1.bodyPick == b) ? Color.BLUE : Color.GRAY);
+                        int tempM = MeasureText(bodies[b].Name, 10);
+                        DrawText(bodies[b].Name, (int)(bodyWritePos.x + (b * 144)) + 64 - (tempM / 2), (int)bodyWritePos.y, 10, Color.WHITE);
+
+                        DrawRectangle((int)bodyWritePos_.x + (b * 144), (int)bodyWritePos_.y, 128, 32, (p2.bodyPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                        DrawRectangleLines((int)bodyWritePos_.x + (b * 144), (int)bodyWritePos_.y, 128, 32, (p2.bodyPick == b) ? Color.BLUE : Color.GRAY);
+                        DrawText(bodies[b].Name, (int)(bodyWritePos_.x + (b * 144)) + 64 - (tempM / 2), (int)bodyWritePos_.y, 10, Color.WHITE);
+                    }
+                    for (int b = 0; b < barrels.Count; b++)
+                    {
+                        DrawRectangle((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (p1.gunPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                        DrawRectangleLines((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (p1.gunPick == b) ? Color.BLUE : Color.GRAY);
+                        int tempM = MeasureText(barrels[b].Name, 10);
+                        DrawText(barrels[b].Name, (int)barrelWritePos.x - (tempM / 2), (int)barrelWritePos.y + (b * 64), 10, Color.WHITE);
+
+                        DrawRectangle((int)barrelWritePos_.x - 72, (int)barrelWritePos_.y + b * 64 - 16, 144, 32, (p2.gunPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
+                        DrawRectangleLines((int)barrelWritePos_.x - 72, (int)barrelWritePos_.y + b * 64 - 16, 144, 32, (p2.gunPick == b) ? Color.BLUE : Color.GRAY);
+                        DrawText(barrels[b].Name, (int)barrelWritePos_.x - (tempM / 2), (int)barrelWritePos_.y + (b * 64), 10, Color.WHITE);
+                    }
                 }
-                for (int b = 0; b < barrels.Count; b++)
+                else
                 {
-                    DrawRectangle((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (gunPick == b) ? Color.SKYBLUE : Color.LIGHTGRAY);
-                    DrawRectangleLines((int)barrelWritePos.x - 72, (int)barrelWritePos.y + b * 64 - 16, 144, 32, (gunPick == b) ? Color.BLUE : Color.GRAY);
-                    int tempM = MeasureText(barrels[b].Name, 12);
-                    DrawText(barrels[b].Name, (int)barrelWritePos.x - (tempM / 2), (int)barrelWritePos.y + (b * 64), 12, Color.WHITE);
+                    if (p1.armor <= 0)
+                    {
+                        int meas = MeasureText("PLAYER 2 WINS!!!", 40);
+                        int meas_ = MeasureText($"Win Streak: {p2.winStreak}", 20);
+                        DrawText($"PLAYER 2 WINS!!!", (GetScreenWidth() / 2) - (meas / 2), GetScreenHeight() /2, 40,Color.RED);
+                        DrawText($"Win Streak: {p2.winStreak}", (GetScreenWidth() / 2) - (meas_ / 2), (GetScreenHeight() / 2) + 40, 20,Color.RED);
+                    }
+                    if (p2.armor <= 0)
+                    {
+                        int meas = MeasureText("PLAYER 1 WINS!!!", 40);
+                        int meas_ = MeasureText($"Win Streak: {p1.winStreak}", 20);
+                        DrawText($"PLAYER 1 WINS!!!", (GetScreenWidth() / 2) - (meas / 2), GetScreenHeight() / 2, 40, Color.BLUE);
+                        DrawText($"Win Streak: {p1.winStreak}", (GetScreenWidth() / 2) - (meas_ / 2), (GetScreenHeight() / 2) + 40, 20, Color.BLUE);
+                    }
                 }
             }
 
             EndDrawing();
             
         }
-        public float Lerp(float begin, float end)
+        public void Reset()
         {
-            return (begin + end) / 2f;
+            p1.Init(bodies, barrels, 1);
+            p2.Init(bodies2, barrels, 2);
+            p1.Place(new Vector2(GetScreenWidth() / 4, GetScreenHeight() / 4 * 3));
+            p2.Place(new Vector2(GetScreenWidth() / 4 * 3, GetScreenHeight() / 4));
+            bullet.Destroy();
+            bullet_.Destroy();
+            explosionFX.Deactivate();
+            explosionFX_.Deactivate();
+            foreach (SceneObject o in obstacles)
+            {
+                o.health = obsHealth;
+            }
         }
     }
     public class ObjectPool<T> where T : new()
